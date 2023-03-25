@@ -16,7 +16,7 @@ list_cat = ['모든 종류'] + df['category'].unique().tolist()
 
 selected_key = st.selectbox('관심 변수 선택', list_var_kr)
 
-st.subheader(f":chart_with_upwards_trend: 지역별 {selected_key} 평균치")
+st.subheader(f":chart_with_upwards_trend: 지역별 {selected_key} 평균값")
 st.text('')
 
 selected_cat = st.selectbox('카테고리 선택', list_cat)
@@ -37,10 +37,18 @@ fig1 = go.Figure()
 
 fig1.add_trace(go.Bar(name="전체", x=list_sido, y=means_sido))
 
+fig1.add_hline(y=means_sido[0], line_width=1,
+               line_color="gray",
+               annotation_text="전국 평균",  # 주석
+               annotation_position="top right",
+               annotation_font_size=10)
+fig1.update_layout(template='xgridoff')
+
+
 with st.expander(f"선택 카테고리: {selected_cat}", expanded=True):
     st.plotly_chart(fig1, theme='streamlit', use_container_width=True)
 
-st.subheader(f":chart_with_upwards_trend: 카테고리별 {selected_key} 평균치")
+st.subheader(f":chart_with_upwards_trend: 카테고리별 {selected_key} 평균값")
 st.text('')
 
 selected_sido = st.selectbox('지역(시도) 선택', list_sido)
@@ -60,6 +68,13 @@ for cat in list_cat:
 fig2 = go.Figure()
 
 fig2.add_trace(go.Bar(name="전체", x=list_cat, y=means_cat))
+
+fig2.add_hline(y=means_cat[0], line_width=1,
+               line_color="gray",
+               annotation_text="전국 평균",  # 주석
+               annotation_position="top right",
+               annotation_font_size=10)
+
 
 with st.expander(f"선택 지역: {selected_sido}", expanded=True):
     st.plotly_chart(fig2, theme='streamlit', use_container_width=True)
