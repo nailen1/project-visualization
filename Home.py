@@ -8,13 +8,10 @@ st.set_page_config(
     page_title="Auction items data dashboard",
     page_icon=":bar_chart:",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
     menu_items={
-        'Get Help': 'https://gsds.snu.ac.kr',
-        'About': "# This is a Streamlit Tutorials for SNU Fintech course"
     }
 )
-
 
 st.title(":house: 법원 부동산 경매 데이터")
 st.text('')
@@ -84,7 +81,7 @@ with st.sidebar.expander(f"관심 지역 선택 (전국 {len(list_address_sido)}
 
 with st.sidebar.expander(f"관심 카테고리 선택 (총 {len(list_category)}종)"):
     selected_cats = st.multiselect(
-        "", options=list_category, default=list_category)
+        "", options=list_category, default=['아파트', '다세대', '다가구주택', '연립주택', '단독주택'])
 
 # colA, colB = st.columns(2)
 # with colA:
@@ -123,10 +120,10 @@ with st.expander(f"선택 지역: {len(selected_sidos)}개, 선택 카테고리:
 
     fig1.update_traces(marker_line_width=0.5, opacity=1)
 
-    fig1.update_xaxes(title_text='지역 이름)')
+    fig1.update_xaxes(title_text='지역 이름')
     fig1.update_yaxes(title_text='물건 수')
 
-    fig1.update_layout(template='xgridoff')
+    # fig1.update_layout(template='xgridoff')
 
     fig1.update_layout(legend_orientation="h",
                        legend_valign="top",
@@ -145,6 +142,12 @@ with st.expander(f"선택 지역: {len(selected_sidos)}개, 선택 카테고리:
                        # legend_bgcolor="LightSteelBlue",
                        # legend_bordercolor="Black",
                        )
+
+    fig1.add_hline(y=df_sido_total['number'].mean(), line_width=1,
+                   line_color="gray",
+                   annotation_text="전국 평균",  # 주석
+                   annotation_position="top right",
+                   annotation_font_size=10)
 
     st.plotly_chart(fig1, theme='streamlit', use_container_width=True)
 
@@ -172,10 +175,10 @@ with st.expander(f"선택 지역: {len(selected_sidos)}개, 선택 카테고리:
 
     fig2.update_traces(marker_line_width=0.5, opacity=1)
 
-    fig2.update_xaxes(title_text='지역 이름)')
+    fig2.update_xaxes(title_text='카테고리')
     fig2.update_yaxes(title_text='물건 수')
 
-    fig2.update_layout(template='xgridoff')
+    # fig2.update_layout(template='ggplot2')
 
     fig2.update_layout(legend_orientation="h",
                        legend_valign="top",
@@ -195,34 +198,24 @@ with st.expander(f"선택 지역: {len(selected_sidos)}개, 선택 카테고리:
                        # legend_bordercolor="Black",
                        )
 
+    fig2.add_hline(y=df_cat_total['number'].mean(), line_width=1,
+                   line_color="gray",
+                   annotation_text="카테고리 평균",  # 주석
+                   annotation_position="top right",
+                   annotation_font_size=10)
+
     st.plotly_chart(fig2, theme='streamlit', use_container_width=True)
 
 st.text('')
-st.subheader(':moneybag: 지역 별 평당 가격')
+st.subheader(':bar_chart: 날짜별 물건 수')
 
-st.text('-')
+with st.expander(f"5일 이동 평균선", expanded=True):
+    df_date_line = df.groupby(
+        'casedate_full').size().reset_index(name="number")
+    df_date_line['date'] = pd.to_datetime(df_date_line['casedate_full'])
 
-dict_price_py = {'다가구주택': 8277785, '아파트': 14629771, '대지': 1326169,
-                 '다세대': 14771646, '상가': 13064833, '임야': 55900,
-                 '근린시설': 7443154, '기타': 2037723, '오피스텔': 14675840,
-                 '연립주택': 10714156, '단독주택': 4295468, '전답': 409345}
+    fig3 = px.scatter(df_date_line, x="date", y="number", trendline="rolling",
+                      trendline_options=dict(window=5))
+    fig3.update_layout(xaxis=dict(rangeslider_visible=True))
 
-df_price_py = pd.DataFrame.from_dict(
-    dict_price_py, orient='index', columns=['price per py'])
-df_price_py = df_price_py.reset_index().rename(columns={
-    'index': 'category'})
-
-fig = px.bar(df_price_py, x="category",
-             y="price per py")
-fig.update_layout(template='xgridoff')
-
-fig.update_traces(marker_line_width=0.5, opacity=1)
-
-fig.update_xaxes(title_text='카테고리 명')
-fig.update_yaxes(title_text='가격 (원)')
-
-st.text('')
-st.subheader(':moneybag: 물건 카테고리 별 평당 가격')
-
-st.bar_chart(data=df_price_py, x='category', y='price per py',
-             width=0, height=0, use_container_width=True)
+    st.plotly_chart(fig3, theme='streamlit', use_container_width=True)
