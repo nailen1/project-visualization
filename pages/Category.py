@@ -28,7 +28,6 @@ df_selected = df[df['category'].isin(selected_cats)]
 st.info(f"카테고리별 법원경매 부동산 물건 수 ('23.3.26~)")
 
 with st.expander(f"선택 지역: {len(selected_sidos)}개, 선택 카테고리: {len(selected_cats)}개", expanded=True):
-
     df_cat_total = df_selected.groupby(
         'category').size().reset_index(name="number")
     df_cat_sido = df_selected[df_selected['address_sido'].isin(selected_sidos)].groupby(
