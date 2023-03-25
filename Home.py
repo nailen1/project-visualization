@@ -1,45 +1,228 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import altair as alt
+import plotly.express as px
 import plotly.graph_objects as go
 
-st.title(":house:부동산 법원경매 물건 데이터")
+st.set_page_config(
+    page_title="Auction items data dashboard",
+    page_icon=":bar_chart:",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+    menu_items={
+        'Get Help': 'https://gsds.snu.ac.kr',
+        'About': "# This is a Streamlit Tutorials for SNU Fintech course"
+    }
+)
+
+
+st.title(":house: 법원 부동산 경매 데이터")
+st.text('')
 
 df = pd.read_csv('./database/auction-items-nonan.csv')
+
+num_of_items = str(df.shape[0])
+mean_of_miss = str(round(df['number_miss'].mean(), 1))
+
+
+def convertPrice(price):
+    if price == 0:
+        return price
+    if price >= 1000000 and price < 10000000:
+        price = str(round(price/1000000, 1))+'백만'
+        return price
+    if price >= 10000000 and price < 100000000:
+        price = str(round(price/10000000, 1))+'천만'
+        return price
+    if price > 100000000 and price < 1000000000000:
+        price = str(round(price/100000000, 1))+'억'
+    if price > 1000000000000 and price < 10000000000000000:
+        price = str(round(price/1000000000000, 1))+'조'
+        return price
+
+
+total_estimate = convertPrice(df['price_estimate'].sum())
+total_bidding = convertPrice(df['price_bidding'].sum())
+
+date_min = min(df['casedate_full'].unique().tolist())
+date_max = max(df['casedate_full'].unique().tolist())
+
+st.subheader(
+    f":chart_with_upwards_trend: 부동산 경매 시장 동향")
+# st.text('')
+
+# st.markdown("---")
+with st.expander("요약 정보", expanded=True):
+    st.metric('기간', f'{date_min} ~ {date_max}',
+              delta_color="normal", help=None, label_visibility="visible")
+    st.text('')
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric('전체 경매 물건 수', num_of_items+'개', "-3%",
+                  delta_color="normal", help=None, label_visibility="visible")
+    with col2:
+        st.metric('경매 물건 감정가 총합', total_estimate+'원', "-8%",
+                  delta_color="normal", help=None, label_visibility="visible")
+    with col3:
+        st.metric('평균 물건 입찰가 총합', total_bidding+'원', delta='-5%',
+                  delta_color="normal", help=None, label_visibility="visible")
+    with col4:
+        st.metric('평균 유찰 횟수', mean_of_miss+'회', delta='0',
+                  delta_color="normal", help=None, label_visibility="visible")
+    st.text('')
 
 list_address_sido = df['address_sido'].unique().tolist()
 list_category = df['category'].unique().tolist()
 
-selected_sidos = st.multiselect(
-    "대상 지역", options=list_address_sido, default=list_address_sido)
-selected_categories = st.multiselect(
-    "대상 지역", options=list_category, default=list_category)
+st.sidebar.subheader("관심 범위 선택")
 
-df_selected = df[df['address_sido'].isin(selected_sidos)]
+with st.sidebar.expander(f"관심 지역 선택 (전국 {len(list_address_sido)}개 시도)"):
+    selected_sidos = st.multiselect(
+        "", options=list_address_sido, default=list_address_sido)
 
-df_sido_total = df_selected.groupby(
-    'address_sido').size().reset_index(name="number")
-df_sido_cat = df_selected[df_selected['category'].isin(selected_categories)].groupby(
-    'address_sido').size().reset_index(name="number")
+with st.sidebar.expander(f"관심 카테고리 선택 (총 {len(list_category)}종)"):
+    selected_cats = st.multiselect(
+        "", options=list_category, default=list_category)
 
-list_sido = df_sido_total['address_sido'].unique().tolist()
+# colA, colB = st.columns(2)
+# with colA:
+#     with st.expander(f"관심 지역 선택 (전국 {len(list_address_sido)}개 시도)"):
+#         selected_sidos = st.multiselect(
+#             "", options=list_address_sido, default=list_address_sido)
+# with colB:
+#     with st.expander(f"관심 카테고리 선택 (총 {len(list_category)}종)"):
+#         selected_cats = st.multiselect(
+#             "", options=list_category, default=list_category)
 
-y1 = df_sido_total['number'].values.tolist()
-y2 = df_sido_cat['number'].values.tolist()
+df_selected_sido = df[df['address_sido'].isin(selected_sidos)]
+df_selected_cat = df[df['category'].isin(selected_cats)]
 
-fig = go.Figure()
-fig.add_trace(go.Bar(name="전체 분류", x=list_sido, y=y1))
-fig.add_trace(go.Bar(name="선택 분류", x=list_sido, y=y2))
+st.subheader(f":bar_chart: 관심 지역 기준 물건 수")
 
-st.plotly_chart(fig, theme=None, use_container_width=True)
+with st.expander(f"선택 지역: {len(selected_sidos)}개, 선택 카테고리: {len(selected_cats)}개", expanded=True):
+    # st.info(f"지역별 법원경매 부동산 물건 수 ('23.3.26~)")
+    df_sido_total = df_selected_sido.groupby(
+        'address_sido').size().reset_index(name="number")
+    df_sido_cat = df_selected_sido[df_selected_sido['category'].isin(selected_cats)].groupby(
+        'address_sido').size().reset_index(name="number")
 
+    list_sido = df_sido_total['address_sido'].unique().tolist()
 
-chart_data = pd.DataFrame(
-    np.random.randn(20, 3),
-    columns=['a', 'b', 'c'])
+    y11 = df_sido_total['number'].values.tolist()
+    y12 = df_sido_cat['number'].values.tolist()
 
-c = alt.Chart(chart_data).mark_circle().encode(
-    x='a', y='b', size='c', color='c', tooltip=['a', 'b', 'c'])
+    fig1 = go.Figure()
+    fig1.add_trace(go.Bar(name="전체", x=list_sido, y=y11, text=y11))
+    fig1.add_trace(go.Bar(
+        name=f"선택된 카테고리 {selected_cats[:3]} 등 {len(selected_cats)}종", x=list_sido, y=y12, text=y12))
 
-st.altair_chart(c, use_container_width=True)
+    fig1.update_traces(textfont_size=12, textangle=90,
+                       textposition="outside", cliponaxis=False)
+
+    fig1.update_traces(marker_line_width=0.5, opacity=1)
+
+    fig1.update_xaxes(title_text='지역 이름)')
+    fig1.update_yaxes(title_text='물건 수')
+
+    fig1.update_layout(template='xgridoff')
+
+    fig1.update_layout(legend_orientation="h",
+                       legend_valign="top",
+                       legend_x=0,
+                       legend_y=1.2,
+                       #   legend_borderwidth=1,
+                       #   legend_bordercolor='#000',
+                       legend_entrywidthmode='fraction',
+                       legend_entrywidth=1,
+                       # legend_title_font_family = "Times New Roman",
+                       # legend_title_font_color="red",
+                       # legend_title_font_size= 20,
+                       # legend_font_family="Courier",
+                       # legend_font_size=12,
+                       # legend_font_color="black",
+                       # legend_bgcolor="LightSteelBlue",
+                       # legend_bordercolor="Black",
+                       )
+
+    st.plotly_chart(fig1, theme='streamlit', use_container_width=True)
+
+st.subheader(f":bar_chart: 관심 카테고리 기준 물건 수")
+
+with st.expander(f"선택 지역: {len(selected_sidos)}개, 선택 카테고리: {len(selected_cats)}개", expanded=True):
+
+    df_cat_total = df_selected_cat.groupby(
+        'category').size().reset_index(name="number")
+    df_cat_sido = df_selected_cat[df_selected_cat['address_sido'].isin(selected_sidos)].groupby(
+        'category').size().reset_index(name="number")
+
+    list_cat = df_cat_total['category'].unique().tolist()
+
+    y21 = df_cat_total['number'].values.tolist()
+    y22 = df_cat_sido['number'].values.tolist()
+
+    fig2 = go.Figure()
+    fig2.add_trace(go.Bar(name="전체", x=list_cat, y=y21, text=y21))
+    fig2.add_trace(go.Bar(
+        name=f"선택된 지역 {selected_sidos[:3]} 등 {len(selected_sidos)}곳", x=list_cat, y=y22, text=y22))
+
+    fig2.update_traces(textfont_size=12, textangle=90,
+                       textposition="outside", cliponaxis=False)
+
+    fig2.update_traces(marker_line_width=0.5, opacity=1)
+
+    fig2.update_xaxes(title_text='지역 이름)')
+    fig2.update_yaxes(title_text='물건 수')
+
+    fig2.update_layout(template='xgridoff')
+
+    fig2.update_layout(legend_orientation="h",
+                       legend_valign="top",
+                       legend_x=0,
+                       legend_y=1.2,
+                       #   legend_borderwidth=1,
+                       #   legend_bordercolor='#000',
+                       legend_entrywidthmode='fraction',
+                       legend_entrywidth=1,
+                       # legend_title_font_family = "Times New Roman",
+                       # legend_title_font_color="red",
+                       # legend_title_font_size= 20,
+                       # legend_font_family="Courier",
+                       # legend_font_size=12,
+                       # legend_font_color="black",
+                       # legend_bgcolor="LightSteelBlue",
+                       # legend_bordercolor="Black",
+                       )
+
+    st.plotly_chart(fig2, theme='streamlit', use_container_width=True)
+
+st.text('')
+st.subheader(':moneybag: 지역 별 평당 가격')
+
+st.text('-')
+
+dict_price_py = {'다가구주택': 8277785, '아파트': 14629771, '대지': 1326169,
+                 '다세대': 14771646, '상가': 13064833, '임야': 55900,
+                 '근린시설': 7443154, '기타': 2037723, '오피스텔': 14675840,
+                 '연립주택': 10714156, '단독주택': 4295468, '전답': 409345}
+
+df_price_py = pd.DataFrame.from_dict(
+    dict_price_py, orient='index', columns=['price per py'])
+df_price_py = df_price_py.reset_index().rename(columns={
+    'index': 'category'})
+
+fig = px.bar(df_price_py, x="category",
+             y="price per py")
+fig.update_layout(template='xgridoff')
+
+fig.update_traces(marker_line_width=0.5, opacity=1)
+
+fig.update_xaxes(title_text='카테고리 명')
+fig.update_yaxes(title_text='가격 (원)')
+
+st.text('')
+st.subheader(':moneybag: 물건 카테고리 별 평당 가격')
+
+st.bar_chart(data=df_price_py, x='category', y='price per py',
+             width=0, height=0, use_container_width=True)
