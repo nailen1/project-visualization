@@ -89,7 +89,7 @@ st.subheader(
     f":bar_chart: 부동산 경매 시장 계층 구조")
 
 list_var_kr = ['감정가', '경매 시작가', '유찰횟수', '면적']
-dict_var = {'감정가': 'price_estimate', '최저입찰가': 'price_bidding',
+dict_var = {'감정가': 'price_estimate', '경매 시작가': 'price_bidding',
             '유찰횟수': 'number_miss', '면적': 'area'}
 
 selected_key = st.selectbox('관심 변수 선택', list_var_kr)
