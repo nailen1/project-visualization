@@ -4,7 +4,7 @@ import numpy as np
 import altair as alt
 import plotly.graph_objects as go
 
-st.title(":house: 관심 평균값 살펴보기")
+st.title("관심 평균값 살펴보기")
 
 df = pd.read_csv('./database/auction-items-nonan.csv')
 
@@ -42,7 +42,7 @@ fig1.add_hline(y=means_sido[0], line_width=1,
                annotation_text="전국 평균",  # 주석
                annotation_position="top right",
                annotation_font_size=10)
-fig1.update_layout(template='xgridoff')
+fig1.update_traces(marker_line_width=0.5, opacity=1)
 
 
 with st.expander(f"선택 카테고리: {selected_cat}", expanded=True):
@@ -74,6 +74,7 @@ fig2.add_hline(y=means_cat[0], line_width=1,
                annotation_text="전국 평균",  # 주석
                annotation_position="top right",
                annotation_font_size=10)
+fig2.update_traces(marker_line_width=0.5, opacity=1)
 
 
 with st.expander(f"선택 지역: {selected_sido}", expanded=True):
